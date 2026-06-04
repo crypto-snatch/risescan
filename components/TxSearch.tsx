@@ -1,18 +1,32 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// a known real wallet (top OI at index time) for the "try a wallet" shortcut
-const SAMPLE_WALLET = "0x7c6bf9003ae3ba366883f63a28c4f3fd6a5958a0";
+const FALLBACK = ["0x7c6bf9003ae3ba366883f63a28c4f3fd6a5958a0"];
 
 export default function TxSearch({ big }: { big?: boolean }) {
   const router = useRouter();
   const [v, setV] = useState("");
+  const wallets = useRef<string[]>(FALLBACK);
   const q = v.trim();
   const isTx = /^0x[0-9a-fA-F]{64}$/.test(q);
   const isAddr = /^0x[0-9a-fA-F]{40}$/.test(q);
   const valid = isTx || isAddr;
+
+  useEffect(() => {
+    fetch("/api/sample-wallets")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.wallets) && d.wallets.length) wallets.current = d.wallets;
+      })
+      .catch(() => {});
+  }, []);
+
+  function tryWallet() {
+    const list = wallets.current;
+    setV(list[Math.floor(Math.random() * list.length)]);
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,7 +46,7 @@ export default function TxSearch({ big }: { big?: boolean }) {
       />
       <div style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 6 }}>
         {!q && big && (
-          <button type="button" onClick={() => setV(SAMPLE_WALLET)} className="chip" style={{ cursor: "pointer" }}>
+          <button type="button" onClick={tryWallet} className="chip" style={{ cursor: "pointer" }}>
             try a wallet ↺
           </button>
         )}

@@ -1,14 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const SAMPLE_WALLET = "0x7c6bf9003ae3ba366883f63a28c4f3fd6a5958a0";
+const FALLBACK = ["0x7c6bf9003ae3ba366883f63a28c4f3fd6a5958a0"];
 
 export default function AccountInput() {
   const router = useRouter();
   const [v, setV] = useState("");
+  const wallets = useRef<string[]>(FALLBACK);
   const valid = /^0x[0-9a-fA-F]{40}$/.test(v.trim());
+
+  useEffect(() => {
+    fetch("/api/sample-wallets")
+      .then((r) => r.json())
+      .then((d) => {
+        if (Array.isArray(d.wallets) && d.wallets.length) wallets.current = d.wallets;
+      })
+      .catch(() => {});
+  }, []);
+
+  function randomWallet() {
+    const list = wallets.current;
+    const pick = list[Math.floor(Math.random() * list.length)];
+    setV(pick);
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,7 +43,7 @@ export default function AccountInput() {
         style={{ textAlign: "center", padding: "16px 20px", fontSize: 15, borderRadius: "var(--radius)" }}
       />
       <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-        <button type="button" onClick={() => setV(SAMPLE_WALLET)} className="glass" style={{ flex: "0 0 auto", padding: "12px 16px", color: "var(--muted)", fontSize: 12.5, borderRadius: "var(--radius)" }}>
+        <button type="button" onClick={randomWallet} className="glass" style={{ flex: "0 0 auto", padding: "12px 16px", color: "var(--muted)", fontSize: 12.5, borderRadius: "var(--radius)" }}>
           random ↺
         </button>
         <button
